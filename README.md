@@ -9,15 +9,32 @@ and Linux AT-SPI — for **custom-drawn UIs** that have no native controls (game
 
 ## Status
 
-Early. Currently implemented:
+The complete cross-platform + Windows C API is bound — all **444** functions exported by the
+bundled `accesskit.dll`:
 
-- Full `Role` and `AkAction` enums (generated from `accesskit.h`).
-- `Node`, `Tree`, `TreeUpdate` builders with ownership-transfer semantics.
-- `ActionRequest` decoding (`Action`, `TargetNode`).
-- `Windows.WindowsSubclassingAdapter` — subclasses the HWND to answer `WM_GETOBJECT`; lazy
-  activation; `UpdateIfActive`.
+- All enums (`Role`, `AkAction`, `Invalid`, `Toggled`, `Live`, `Orientation`, `SortDirection`,
+  `AriaCurrent`, `AutoComplete`, `HasPopup`, `ListStyle`, `TextAlign`, `TextDirection`,
+  `VerticalOffset`, `ScrollUnit`, `ScrollHint`, `TextDecorationStyle`).
+- `Node` with its **full** property surface — presence flags, strings, numeric/index/float values,
+  colors, text decorations, enum properties, node-id relations (children, controls, labelled-by,
+  …), bounds, transform, text selection, custom actions, and the action set. Optional native
+  properties surface as C# `Nullable<T>` getters.
+- `Tree` (toolkit name/version/debug) and `TreeUpdate` (push nodes, set/clear tree, focus, tree id).
+- `CustomAction`.
+- Geometry value types `Point`, `Size`, `Vec2`, `Rect`, `Affine`, plus `Color`, `TextDecoration`,
+  `TextPosition`, `TextSelection`, `TreeId`, with the kurbo-derived math helpers (`Rect.Union`,
+  `Affine.TransformPoint`, …).
+- `ActionRequest` decoding including the action-data payload (`Value`, `NumericValue`,
+  `CustomActionId`, `ScrollToPoint`, `SetTextSelection`, …).
+- `Windows.WindowsSubclassingAdapter` (subclasses the HWND to answer `WM_GETOBJECT`; lazy
+  activation; `UpdateIfActive`) and `Windows.WindowsAdapter` (for apps running their own window
+  procedure: `HandleWmGetObject`, `UpdateWindowFocusState`).
 
-Not yet implemented: macOS/Unix adapters, the text/`TextRun` model, most node property setters.
+The P/Invoke layer, enums, and the regular `Node` properties are generated from `accesskit.h` by
+[`tools/generate_bindings.py`](tools/generate_bindings.py); marshaling-heavy members are hand-written.
+
+Not included: the macOS/iOS/Android/Unix platform adapters — those symbols are not present in the
+win-x64 `accesskit.dll`.
 
 ## Usage (Windows)
 
@@ -38,7 +55,7 @@ TreeUpdate BuildTree()
     button.SetLabel("Test button");
     button.AddAction(AkAction.Click);
     button.AddAction(AkAction.Focus);
-    button.SetBounds(new Rect(10, 10, 110, 40));
+    button.Bounds = new Rect(10, 10, 110, 40);
 
     var update = TreeUpdate.WithCapacityAndFocus(2, Button);
     update.PushNode(Root, window);
@@ -61,7 +78,8 @@ adapter.UpdateIfActive(BuildTree);
 
 The header (`third-party/accesskit.h`) and `accesskit.dll` come from the official
 [accesskit-c releases](https://github.com/AccessKit/accesskit-c/releases). To bump the version,
-download the new release zip and replace the header and `runtimes/<rid>/native/` libraries; the
-`Role`/`AkAction` enums are generated from the header.
+download the new release zip and replace the header and `runtimes/<rid>/native/` libraries, then
+re-run `python tools/generate_bindings.py` to regenerate `Interop.Generated.cs`,
+`Enums.Generated.cs`, and `Node.Generated.cs`.
 
 Licensed Apache-2.0 OR MIT (see `third-party/LICENSE-APACHE`).

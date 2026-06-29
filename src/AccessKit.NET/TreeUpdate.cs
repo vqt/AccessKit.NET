@@ -29,8 +29,21 @@ public sealed class TreeUpdate : IDisposable
     public void SetTree(Tree tree) =>
         Interop.accesskit_tree_update_set_tree(_handle, tree.Release());
 
+    /// <summary>Clear any previously attached tree metadata.</summary>
+    public void ClearTree() => Interop.accesskit_tree_update_clear_tree(_handle);
+
     /// <summary>Set which node currently has accessibility focus.</summary>
     public void SetFocus(ulong focus) => Interop.accesskit_tree_update_set_focus(_handle, focus);
+
+    /// <summary>The id of the tree this update targets.</summary>
+    public TreeId TreeId
+    {
+        get => Interop.accesskit_tree_update_get_tree_id(_handle);
+        set => Interop.accesskit_tree_update_set_tree_id(_handle, value);
+    }
+
+    /// <summary>A debug representation of the update.</summary>
+    public string? Debug() => Interop.TakeString(Interop.accesskit_tree_update_debug(_handle));
 
     /// <summary>Relinquish ownership of the native update so AccessKit can consume and free it.</summary>
     internal IntPtr Release()
