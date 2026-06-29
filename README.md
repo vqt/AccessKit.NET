@@ -29,12 +29,23 @@ bundled `accesskit.dll`:
 - `Windows.WindowsSubclassingAdapter` (subclasses the HWND to answer `WM_GETOBJECT`; lazy
   activation; `UpdateIfActive`) and `Windows.WindowsAdapter` (for apps running their own window
   procedure: `HandleWmGetObject`, `UpdateWindowFocusState`).
+- `Macos.MacosSubclassingAdapter` (subclasses an `NSView`/`NSWindow` content view to answer
+  `NSAccessibility`; `ForView`/`ForWindow`, `AddFocusForwarderToWindowClass`) and `Macos.MacosAdapter`
+  (for apps implementing `NSAccessibility` themselves: `ViewChildren`/`Focus`/`HitTest` bridges,
+  `UpdateViewFocusState`). **Requires the macOS native library** — see below.
 
 The P/Invoke layer, enums, and the regular `Node` properties are generated from `accesskit.h` by
 [`tools/generate_bindings.py`](tools/generate_bindings.py); marshaling-heavy members are hand-written.
 
-Not included: the macOS/iOS/Android/Unix platform adapters — those symbols are not present in the
-win-x64 `accesskit.dll`.
+Not included: the iOS/Android/Unix platform adapters — out of scope for now.
+
+### macOS native library
+
+Only the win-x64 `accesskit.dll` is bundled in this repo. To use the macOS adapters at runtime, drop
+the matching `libaccesskit.dylib` from the [accesskit-c releases](https://github.com/AccessKit/accesskit-c/releases)
+into `runtimes/osx-arm64/native/` and/or `runtimes/osx-x64/native/`; the `.csproj` picks them up
+automatically (the entries are guarded by `Exists`, so the binding compiles without them). All macOS
+adapter calls must be made on the main thread.
 
 ## Usage (Windows)
 
@@ -80,6 +91,6 @@ The header (`third-party/accesskit.h`) and `accesskit.dll` come from the officia
 [accesskit-c releases](https://github.com/AccessKit/accesskit-c/releases). To bump the version,
 download the new release zip and replace the header and `runtimes/<rid>/native/` libraries, then
 re-run `python tools/generate_bindings.py` to regenerate `Interop.Generated.cs`,
-`Enums.Generated.cs`, and `Node.Generated.cs`.
+`Interop.Macos.Generated.cs`, `Enums.Generated.cs`, and `Node.Generated.cs`.
 
 Licensed Apache-2.0 OR MIT (see `third-party/LICENSE-APACHE`).

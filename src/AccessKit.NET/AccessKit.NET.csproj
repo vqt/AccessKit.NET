@@ -29,6 +29,22 @@
           CopyToOutputDirectory="PreserveNewest"
           Pack="true"
           PackagePath="runtimes\win-x64\native\" />
+
+    <!-- macOS native (libaccesskit.dylib). The Apple Silicon / Intel binaries are not bundled in
+         this repo; drop them under runtimes/<rid>/native/ to enable the macOS adapters. The
+         Exists() guards keep the build working on machines that only have the win-x64 binary. -->
+    <None Include="runtimes\osx-arm64\native\libaccesskit.dylib"
+          Condition="Exists('runtimes\osx-arm64\native\libaccesskit.dylib')"
+          Link="libaccesskit.dylib"
+          CopyToOutputDirectory="PreserveNewest"
+          Pack="true"
+          PackagePath="runtimes\osx-arm64\native\" />
+    <None Include="runtimes\osx-x64\native\libaccesskit.dylib"
+          Condition="Exists('runtimes\osx-x64\native\libaccesskit.dylib')"
+          Link="libaccesskit.dylib"
+          CopyToOutputDirectory="PreserveNewest"
+          Pack="true"
+          PackagePath="runtimes\osx-x64\native\" />
   </ItemGroup>
 
 </Project>
