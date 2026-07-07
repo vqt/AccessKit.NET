@@ -24,10 +24,16 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --no-restore
+
+      - name: Create nupkg directory
+        run: mkdir -p nupkg
 
       - name: Pack
-        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output ./nupkg
+        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output nupkg
+
+      - name: Verify package
+        run: ls -la nupkg/
 
       - name: Get OIDC Token
         id: oidc
