@@ -5,12 +5,12 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  id-token: write
-
 jobs:
   publish:
     runs-on: windows-latest
+    permissions:
+      id-token: write   # required for Trusted Publishing (OIDC)
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -20,34 +20,21 @@ jobs:
         with:
           dotnet-version: 8.x
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Pack
+        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output nupkg
 
-      - name: Build
-        run: dotnet build src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --no-restore
-
-      - name: Pack (verbose)
-        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output nupkg --verbosity diagnostic
-
-      - name: List all files
-        run: Get-ChildItem -Path . -Recurse -Include "*.nupkg" -ErrorAction SilentlyContinue
-
-      - name: Debug info
-        run: |
-          Write-Host "Current directory: $(Get-Location)"
-          Write-Host "Contents of root:"
-          Get-ChildItem -Path . | Format-Table
-          Write-Host "Contents of nupkg (if exists):"
-          if (Test-Path nupkg) { Get-ChildItem -Path nupkg -Recurse } else { Write-Host "nupkg directory does not exist" }
-
-      - name: Get OIDC Token
-        id: oidc
-        uses: actions/github-script@v7
+      # Exchange the GitHub OIDC token for a short-lived nuget.org API key.
+      - name: NuGet login (Trusted Publishing)
+        uses: NuGet/login@v1
+        id: login
         with:
-          script: |
-            const token = await core.getIDToken('https://api.nuget.org');
-            core.setSecret(token);
-            core.setOutput('token', token);
+          user: vqt
 
-      - name: Publish to NuGet (Trusted Publishing)
-        run: dotnet nuget push ./nupkg/*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${{ steps.oidc.outputs.token }} --skip-duplicate
+      - name: Push
+        run: |
+          $pkg = Get-ChildItem nupkg -Filter *.nupkg | Select-Object -First 1
+          Write-Host "Pushing $($pkg.Name)"
+          dotnet nuget push $pkg.FullName `
+            --api-key ${{ steps.login.outputs.NUGET_API_KEY }} `
+            --source https://api.nuget.org/v3/index.json `
+            --skip-duplicate
