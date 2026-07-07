@@ -26,14 +26,19 @@ jobs:
       - name: Build
         run: dotnet build src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --no-restore
 
-      - name: Create nupkg directory
-        run: if (!(Test-Path nupkg)) { New-Item -ItemType Directory -Path nupkg }
+      - name: Pack (verbose)
+        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output nupkg --verbosity diagnostic
 
-      - name: Pack
-        run: dotnet pack src/AccessKit.NET/AccessKit.NET.csproj --configuration Release --output nupkg
+      - name: List all files
+        run: Get-ChildItem -Path . -Recurse -Include "*.nupkg" -ErrorAction SilentlyContinue
 
-      - name: Verify package
-        run: Get-ChildItem -Path nupkg/ -Recurse
+      - name: Debug info
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+          Write-Host "Contents of root:"
+          Get-ChildItem -Path . | Format-Table
+          Write-Host "Contents of nupkg (if exists):"
+          if (Test-Path nupkg) { Get-ChildItem -Path nupkg -Recurse } else { Write-Host "nupkg directory does not exist" }
 
       - name: Get OIDC Token
         id: oidc
